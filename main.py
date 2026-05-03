@@ -94,6 +94,15 @@ class Player:
 		self.drag = drag
 		self.rotation = 0.0
 
+	def forward_vector(self) -> Vector2D:
+		"""
+		Renvoie le `Vector2D` pointant tout-droit.
+		"""
+		return Vector2D(
+			pyxel.cos(self.rotation - 90.0),
+			pyxel.sin(self.rotation - 90.0),
+		)
+
 	def update(self) -> None:
 		"""
 		Gère le déplacement et les actions du joueur.
@@ -106,26 +115,15 @@ class Player:
 
 		# Souris.
 		if pyxel.btn(pyxel.KEY_UP):
-			inertia: Vector2D = Vector2D(
-				pyxel.cos(self.rotation - 90.0),
-				pyxel.sin(self.rotation - 90.0),
-			) * self.acceleration
-			self.inertia += inertia
+			self.inertia += self.forward_vector() * self.acceleration
 		if pyxel.btn(pyxel.KEY_DOWN):
-			inertia: Vector2D = Vector2D(
-				pyxel.cos(self.rotation - 90.0),
-				pyxel.sin(self.rotation - 90.0),
-			) * (self.acceleration / -3.0)
-			self.inertia += inertia
+			self.inertia += self.forward_vector() * (self.acceleration / -3.0)
 		if pyxel.btn(pyxel.KEY_LEFT):
 			inertia: Vector2D = Vector2D(
 				pyxel.cos(self.rotation),
 				pyxel.sin(self.rotation),
 			)
-			centripete: Vector2D = Vector2D(
-				pyxel.cos(self.rotation - 90.0),
-				pyxel.sin(self.rotation - 90.0),
-			)
+			centripete: Vector2D = self.forward_vector()
 			lateral: Vector2D = (centripete + inertia) * (self.acceleration / 2.0)
 		
 			self.inertia += lateral
@@ -134,18 +132,21 @@ class Player:
 				pyxel.cos(self.rotation),
 				pyxel.sin(self.rotation),
 			)
-			centripete: Vector2D = Vector2D(
-				pyxel.cos(self.rotation - 90.0),
-				pyxel.sin(self.rotation - 90.0),
-			)
+			centripete: Vector2D = self.forward_vector()
 			lateral: Vector2D = (centripete - inertia) * (self.acceleration / 2.0)
 
 			self.inertia += lateral
 
 		# Position.
-		self.position += self.inertia
+		self.position.x = pyxel.clamp(self.position.x + self.inertia.x, 0.0, pyxel.width)
+		self.position.y = pyxel.clamp(self.position.y + self.inertia.y, 0.0, pyxel.height)
 		self.inertia /= self.drag
-
+		
+		# Collisions.
+		if self.position.x <= 0.0 or self.position.x >= pyxel.width:
+			self.inertia.x *= (-1)
+		if self.position.y <= 0.0 or self.position.y >= pyxel.height:
+			self.inertia.y *= (-1)
 
 	def draw(self) -> None:
 		"""
@@ -174,21 +175,23 @@ class Ui:
 	SPRITE_MOUSE_SIZE: tuple[int, int] = (16, 16)
 
 	parent_app: 'App'
+	camera_position: Vector2D
 
 	def __init__(self, parent_app: 'App') -> None:
 		"""
 		Instancie la sous-class `Ui`.
 		"""
 		self.parent_app = parent_app
+		self.camera_position = Vector2D(0.0, 0.0)
 
 	def update(self) -> None:
 		"""
 		Mets à jour la camera.
 		"""
-		pyxel.camera(
-			self.parent_app.player.inertia.x,
-			self.parent_app.player.inertia.y,
-		)	
+		self.camera_position += self.parent_app.player.inertia
+		self.camera_position /= 2.0
+		pyxel.camera(self.camera_position.x, self.camera_position.y)
+
 
 	def draw(self) -> None:
 		"""
