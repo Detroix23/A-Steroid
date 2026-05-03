@@ -176,6 +176,7 @@ class Ui:
 
 	parent_app: 'App'
 	camera_position: Vector2D
+	space: pyxel.Tilemap
 
 	def __init__(self, parent_app: 'App') -> None:
 		"""
@@ -189,7 +190,7 @@ class Ui:
 		Mets à jour la camera.
 		"""
 		self.camera_position += self.parent_app.player.inertia
-		self.camera_position /= 2.0
+		self.camera_position /= 1.9	
 		pyxel.camera(self.camera_position.x, self.camera_position.y)
 
 
@@ -197,16 +198,6 @@ class Ui:
 		"""
 		Dessine toute l'interface: souris, textes.
 		"""
-		# Décors
-		frame_margin = 5
-		pyxel.rectb(
-			x=frame_margin,
-			y=frame_margin,
-			w=pyxel.width - 2 * frame_margin,
-			h=pyxel.height - 2 * frame_margin,
-			col=pyxel.COLOR_WHITE,
-		)
-
 		# Souris animée.
 		mouse_frame: int = abs(pyxel.floor(pyxel.frame_count / 4) % 7 - 3)
 		pyxel.blt(
@@ -270,9 +261,29 @@ class App:
 		Dessine, affiche avec `pyxel` le jeu.
 		"""
 		pyxel.cls(0)
+
+		# Décors
+		pyxel.bltm(
+			x=-16.0 + pyxel.ceil(self.ui.camera_position.x * 0.6),
+			y=-16.0 + pyxel.ceil(self.ui.camera_position.y * 0.6),
+			tm=0,
+			u=0.0,
+			v=0.0,
+			w=16.0 * 20.0,
+			h=16.0 * 20.0,
+		)
+
+		frame_margin = 5
+		pyxel.rectb(
+			x=frame_margin,
+			y=frame_margin,
+			w=pyxel.width - 2 * frame_margin,
+			h=pyxel.height - 2 * frame_margin,
+			col=pyxel.COLOR_WHITE,
+		)
+
 		self.player.draw()
 		self.ui.draw()
-
 
 
 def main() -> None:
